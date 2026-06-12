@@ -313,13 +313,49 @@
     }
     .btn-cancel:hover { color: var(--text); background: var(--surface3); }
 
-    /* RESPONSIVE */
-    @media (max-width: 768px) {
-      .stats-row { grid-template-columns: repeat(2,1fr); }
-      .form-grid  { grid-template-columns: 1fr; }
+    /* ═══ MOBILE ═══ */
+    @media (max-width: 640px) {
+      /* Login */
+      #screen-login { padding: 1.25rem; }
+      .login-box { padding: 1.75rem 1.25rem; border-radius: 14px; }
+
+      /* Topbar */
+      .topbar { padding: 0 1rem; height: 50px; }
+      .brand-sep, .brand-page { display: none; }
+      .user-name-top { display: none; }
+      .user-pill { padding: 5px 7px; }
+
+      /* Main */
+      .main { padding: 1rem; gap: 1.25rem; }
+
+      /* Stats */
+      .stats-row { grid-template-columns: repeat(2,1fr); gap: 8px; }
+      .stat-val { font-size: 22px; }
+
+      /* Add form */
+      .form-grid { grid-template-columns: 1fr; }
+      .btn-add { width: 100%; justify-content: center; height: 42px; }
+
+      /* Table */
       .table-header { display: none; }
-      .table-row { grid-template-columns: 1fr auto; gap: 8px; }
+      .users-table { border-radius: 12px; }
+      .table-row {
+        grid-template-columns: 1fr auto;
+        gap: 8px;
+        padding: 12px 1rem;
+      }
       .tr-email, .tr-id { display: none; }
+      .tr-name { font-size: 13px; }
+
+      /* Modal */
+      .overlay { align-items: flex-end; padding: 0; }
+      .modal {
+        border-radius: 18px 18px 0 0;
+        padding: 1.25rem 1.25rem 2rem;
+        max-width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+      }
     }
   </style>
 </head>
