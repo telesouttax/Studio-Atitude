@@ -202,40 +202,81 @@
 
     /* MOBILE */
     @media(max-width:640px){
-      #screen-login{padding:1.25rem}
-      .login-box{padding:1.75rem 1.25rem;border-radius:14px}
-      .topbar{padding:0 1rem;height:50px}
-      .brand-sep,.brand-page{display:none}
-      .user-info{display:none}
-      .user-pill{padding:5px 7px}
-      .nav-tabs{padding:0 1rem;overflow-x:auto}
-      .nav-tab{padding:10px 12px;font-size:12px;white-space:nowrap}
-      .kpis{grid-template-columns:repeat(2,1fr)}
-      .kpi{padding:10px 1rem}
-      .kpi-val{font-size:18px}
+      /* Login */
+      #screen-login{padding:1rem}
+      .login-box{padding:1.5rem 1.25rem;border-radius:14px;width:100%}
+
+      /* Topbar compacta */
+      .topbar{padding:0 1rem;height:50px;gap:8px}
+      .brand-sep,.brand-page,.user-info{display:none}
+      .user-pill{padding:5px 8px;gap:6px}
+      .brand-name{font-size:12px;letter-spacing:0.06em}
+      .brand-logo{width:22px;height:22px}
+
+      /* Nav */
+      .nav-tabs{padding:0;overflow-x:auto;-webkit-overflow-scrolling:touch}
+      .nav-tab{padding:11px 16px;font-size:12px;white-space:nowrap;flex-shrink:0}
+
+      /* KPIs 2x2 compactos */
+      .kpis{grid-template-columns:repeat(2,1fr);gap:1px}
+      .kpi{padding:10px 14px;gap:8px}
+      .kpi-dot{width:7px;height:7px}
+      .kpi-val{font-size:20px}
       .kpi-label{font-size:10px}
-      .toolbar{flex-direction:column;align-items:stretch;padding:8px 1rem;gap:8px}
-      .filters{gap:5px;overflow-x:auto;flex-wrap:nowrap;padding-bottom:2px}
+
+      /* Toolbar empilhada e contida */
+      .toolbar{flex-direction:column;align-items:stretch;padding:10px 1rem;gap:8px}
+      .filters{display:flex;gap:6px;overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;padding-bottom:3px;width:100%}
+      .filters::-webkit-scrollbar{display:none}
       .filter-label{display:none}
-      .search-wrap{width:100%}
-      #searchInput{width:100%;flex:1}
-      .topbar-right{width:100%;justify-content:space-between}
-      #btnNovaDemanda{flex:1;justify-content:center}
-      .board{display:flex;flex-direction:column;gap:0;background:none}
-      .col{border-bottom:0.5px solid var(--border)}
-      .col-head{position:relative;top:0;padding:12px 1rem;cursor:pointer}
-      .col-body{padding:8px 1rem 12px}
-      .col-body.collapsed{display:none}
-      .card{padding:12px 13px}
-      .card-title{font-size:13px}
-      .act-btn{padding:5px 8px;font-size:11px}
-      .add-btn{margin:0 1rem 10px}
+      .pill{white-space:nowrap;flex-shrink:0;font-size:11px;padding:5px 12px}
+      .search-wrap{width:100%;border-radius:10px;padding:8px 12px}
+      #searchInput{width:100%;min-width:0;flex:1;font-size:14px}
+      .topbar-right{width:100%}
+      #btnNovaDemanda{width:100%;justify-content:center;padding:9px;border-radius:9px;font-size:13px}
+
+      /* Board — abas de coluna */
+      #view-kanban{display:flex;flex-direction:column;width:100%;overflow:hidden}
+      .board{display:block;width:100%;background:none;gap:0}
+      .col{width:100%;border-bottom:0.5px solid var(--border);border-right:none;background:var(--surface)}
+      .col-head{
+        position:relative;top:0;z-index:5;
+        padding:13px 1rem;cursor:pointer;
+        display:flex;align-items:center;justify-content:space-between;
+        -webkit-tap-highlight-color:transparent;
+      }
+      .col-head::after{
+        content:'▾';font-size:12px;color:var(--text-dim);
+        transition:transform 0.2s;display:block;
+      }
+      .col.open .col-head::after{transform:rotate(180deg)}
+      .col-body{padding:8px 1rem 14px;display:none}
+      .col.open .col-body{display:flex}
+      .add-btn{margin:0 1rem 12px}
+
+      /* Cards no mobile */
+      .card{padding:13px 14px;border-radius:10px}
+      .card-title{font-size:13px;line-height:1.4}
+      .chip{font-size:11px}
+      .act-btn{padding:5px 9px;font-size:11px}
+      .designer-chip{font-size:11px;padding:3px 8px}
+
+      /* Admin view */
       #view-admin{padding:1rem;gap:1.25rem}
-      .form-row{grid-template-columns:1fr}
+      .form-row{grid-template-columns:1fr;gap:8px}
       .users-grid{grid-template-columns:1fr}
+      .admin-section-title{font-size:11px}
+
+      /* Modal como sheet bottom */
       .overlay{align-items:flex-end;padding:0}
-      .modal{border-radius:18px 18px 0 0;padding:1.25rem 1.25rem 2rem;max-width:100%;max-height:92vh;overflow-y:auto}
-      .field-row{grid-template-columns:1fr}
+      .modal{
+        border-radius:20px 20px 0 0;
+        padding:1.25rem 1.25rem calc(env(safe-area-inset-bottom) + 1.5rem);
+        max-width:100%;width:100%;
+        max-height:93vh;overflow-y:auto;
+      }
+      .field-row{grid-template-columns:1fr;gap:8px}
+      .field input,.field select,.field textarea{font-size:16px}
     }
   </style>
 </head>
@@ -477,7 +518,7 @@ async function enterApp() {
   ['addCol0','addCol1','addCol2'].forEach(id=>document.getElementById(id).classList.toggle('hidden',!canCreate));
 
   showView('kanban');
-  setTimeout(initMobileCols,100);
+  setTimeout(()=>{ initMobileCols(); },150);
 }
 
 // ════════════════════════════════
@@ -672,18 +713,32 @@ async function deleteUser(id) {
 }
 
 // ════════════════════════════════
-// MOBILE COLS
+// MOBILE COLS — accordion
 // ════════════════════════════════
 function initMobileCols() {
   if(window.innerWidth>640) return;
   [0,1,2].forEach(i=>{
-    const head=document.getElementById('col'+i).previousElementSibling;
-    const body=document.getElementById('col'+i);
-    if(i!==0) body.classList.add('collapsed');
-    head.onclick=()=>body.classList.toggle('collapsed');
+    const col=document.getElementById('col'+i).parentElement;
+    const head=col.querySelector('.col-head');
+    // Abre só a primeira por padrão
+    if(i===0) col.classList.add('open');
+    else col.classList.remove('open');
+    // Remove listeners antigos clonando o elemento
+    const newHead=head.cloneNode(true);
+    head.parentNode.replaceChild(newHead,head);
+    newHead.addEventListener('click',()=>col.classList.toggle('open'));
   });
 }
-window.addEventListener('resize',()=>{if(window.innerWidth<=640)initMobileCols()});
+window.addEventListener('resize',()=>{
+  if(window.innerWidth<=640) initMobileCols();
+  else {
+    // Desktop: remove tudo
+    [0,1,2].forEach(i=>{
+      const col=document.getElementById('col'+i).parentElement;
+      col.classList.remove('open');
+    });
+  }
+});
 
 // ════════════════════════════════
 // KEYBOARD
