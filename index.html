@@ -699,11 +699,17 @@ async function renderBoard() {
 
   let url = 'demandas?order=id.desc';
   if (currentUser.cargo==='designer') {
-    url = 'demandas?designer_id=eq.'+encodeURIComponent(currentUser.id)+'&order=id.desc';
+    url = 'demandas?designer_id=eq.'+currentUser.id+'&order=id.desc';
   }
 
   let tasks = [];
-  try { tasks = await supa(url); } catch(e) {}
+  try {
+    tasks = await supa(url);
+  } catch(e) {
+    console.error('Erro ao buscar demandas:', e);
+    cols[0].innerHTML = '<div class="empty-col"><p style="color:var(--red);font-size:12px">Erro: '+e.message+'</p></div>';
+    return;
+  }
 
   const counts=[0,0,0];
   cols.forEach(c=>c.innerHTML='');
