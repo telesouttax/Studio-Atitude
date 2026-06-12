@@ -933,26 +933,53 @@ function initFirebase() {
 }
 
 async function enablePush() {
+  const btn = document.getElementById('notifEnable');
+  btn.textContent = 'Ativando...';
   try {
+    // Garantir que o SW está registrado e ativo
+    const reg = await navigator.serviceWorker.ready;
+
+    // Pedir permissão
     const perm = await Notification.requestPermission();
-    if (perm !== 'granted') return;
+    if (perm !== 'granted') {
+      btn.textContent = '⚠️ Permissão negada. Ative nas configurações.';
+      return;
+    }
+
+    // Inicializar Firebase se necessário
     if (!fbMessaging) initFirebase();
-    const token = await fbMessaging.getToken({ vapidKey: VAPID });
+
+    // Pegar token FCM
+    const token = await fbMessaging.getToken({ vapidKey: VAPID, serviceWorkerRegistration: reg });
+
     if (token) {
       localStorage.setItem(K_PUSH_TOKEN, token);
-      // Salvar token no Supabase para enviar notificações depois
+      // Salvar no Supabase
       await supa('usuarios?id=eq.'+currentUser.id, 'PATCH', { push_token: token });
-      document.getElementById('notifEnable').classList.remove('show');
-      showToast('Notificações ativadas!');
+      btn.classList.remove('show');
+      showToast('✓ Notificações ativadas!');
+    } else {
+      btn.textContent = '⚠️ Tente novamente';
     }
-  } catch(e) { console.warn('Push token:', e); }
+  } catch(e) {
+    console.error('Push error:', e);
+    btn.textContent = '⚠️ Erro: ' + e.message;
+    btn.style.color = 'var(--red)';
+    btn.style.borderColor = 'var(--red-border)';
+    btn.style.background = 'var(--red-bg)';
+  }
 }
 
 async function checkPushStatus() {
   if (currentUser.cargo !== 'designer') return;
   document.getElementById('notifWrap').classList.remove('hidden');
-  if (Notification.permission !== 'granted') {
+  // Verificar se já tem token salvo localmente
+  const savedToken = localStorage.getItem(K_PUSH_TOKEN);
+  if (Notification.permission !== 'granted' || !savedToken) {
     document.getElementById('notifEnable').classList.add('show');
+  } else {
+    // Re-salvar token no Supabase caso tenha sido perdido
+    try { await supa('usuarios?id=eq.'+currentUser.id, 'PATCH', { push_token: savedToken }); } catch(e){}
   }
 }
 
