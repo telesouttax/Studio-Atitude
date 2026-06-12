@@ -218,11 +218,12 @@
     }
     .notif-badge.show{display:flex}
     .notif-panel{
-      display:none;position:absolute;top:46px;right:0;
-      width:300px;background:var(--surface);
+      display:none;position:fixed;top:58px;right:1rem;
+      width:300px;max-width:calc(100vw - 2rem);
+      background:var(--surface);
       border:0.5px solid var(--border2);border-radius:14px;
-      z-index:100;overflow:hidden;
-      box-shadow:0 8px 32px rgba(0,0,0,0.5);
+      z-index:200;overflow:hidden;
+      box-shadow:0 8px 32px rgba(0,0,0,0.6);
     }
     .notif-panel.open{display:block}
     .notif-header{
@@ -231,7 +232,7 @@
     }
     .notif-title{font-size:13px;font-weight:600;color:var(--text)}
     .notif-clear{font-size:11px;color:var(--orange);cursor:pointer;background:none;border:none;font-family:'Space Grotesk',sans-serif;font-weight:600}
-    .notif-list{max-height:320px;overflow-y:auto}
+    .notif-list{max-height:60vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
     .notif-item{
       padding:12px 14px;border-bottom:0.5px solid var(--border);
       cursor:pointer;transition:background 0.12s;
@@ -250,9 +251,6 @@
       display:none;
     }
     .notif-enable.show{display:block}
-    @media(max-width:640px){
-      .notif-panel{width:calc(100vw - 2rem);right:-1rem}
-    }
 
     /* FILTRO DESIGNER */
     .designer-filter-bar{
