@@ -1,46 +1,8 @@
-importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js');
-
-firebase.initializeApp({
-  apiKey: "AIzaSyBGn9LxTldEOMDuqoEY3Jxw0acmnCsmIQM",
-  authDomain: "studio-atitude.firebaseapp.com",
-  projectId: "studio-atitude",
-  storageBucket: "studio-atitude.firebasestorage.app",
-  messagingSenderId: "715112663622",
-  appId: "1:715112663622:web:2ce104f5a4f8cd3739d847"
-});
-
-const messaging = firebase.messaging();
-
-// Notificação em background (app fechado)
-messaging.onBackgroundMessage(payload => {
-  const { title, body, icon } = payload.notification;
-  self.registration.showNotification(title, {
-    body,
-    icon: icon || '/logo.png',
-    badge: '/logo.png',
-    vibrate: [200, 100, 200],
-    data: payload.data
-  });
-});
-
-// Ao clicar na notificação, abre o app
-self.addEventListener('notificationclick', e => {
-  e.notification.close();
-  e.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
-      if (list.length) return list[0].focus();
-      return clients.openWindow('/');
-    })
-  );
-});
-
-// Cache básico para PWA offline
-const CACHE = 'sa-v1';
+const CACHE = 'sa-v2';
 const ASSETS = ['/', '/index.html', '/logo.png', '/manifest.json'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS).catch(()=>{})));
   self.skipWaiting();
 });
 
@@ -53,7 +15,30 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
-  e.respondWith(
-    fetch(e.request).catch(() => caches.match(e.request))
+  e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+});
+
+self.addEventListener('push', e => {
+  if (!e.data) return;
+  let data = {};
+  try { data = e.data.json(); } catch(err) { data = { title: 'Studio Atitude', body: e.data.text() }; }
+  e.waitUntil(
+    self.registration.showNotification(data.title || 'Studio Atitude', {
+      body: data.body || '',
+      icon: '/logo.png',
+      badge: '/logo.png',
+      vibrate: [200, 100, 200],
+      data: data
+    })
+  );
+});
+
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      if (list.length) return list[0].focus();
+      return clients.openWindow('/');
+    })
   );
 });
