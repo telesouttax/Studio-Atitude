@@ -927,60 +927,44 @@ document.addEventListener('keydown',e=>{
 });
 
 // ════════════════════════════════
-// FIREBASE + PUSH NOTIFICATIONS
+// WEB PUSH NATIVO
 // ════════════════════════════════
-const FB_CONFIG = {
-  apiKey: "AIzaSyBGn9LxTldEOMDuqoEY3Jxw0acmnCsmIQM",
-  authDomain: "studio-atitude.firebaseapp.com",
-  projectId: "studio-atitude",
-  storageBucket: "studio-atitude.firebasestorage.app",
-  messagingSenderId: "715112663622",
-  appId: "1:715112663622:web:2ce104f5a4f8cd3739d847"
-};
-const VAPID = "BP58SYQkOv2TQgIexnw-wti8f1aT2ME0UFjvsa-qxtwvnBkfC_BG-r6cldaez7v4bTZSNbOCKE16p0dpJVBqhks";
+const VAPID_PUBLIC = 'BFQcdq5VQs4aU6TFc_1I6qRAcdXGregJ1q2ETxlHZgJPKy98dVsGjUYy5SHBk_lDX18W5b2m8z-DbeMoJUB3R2g';
 const K_NOTIFS = 'sa_notifs_v1';
-const K_PUSH_TOKEN = 'sa_push_token';
-let fbMessaging = null;
+const K_PUSH_SUB = 'sa_push_sub';
 
-function initFirebase() {
-  try {
-    if (!firebase.apps.length) firebase.initializeApp(FB_CONFIG);
-    fbMessaging = firebase.messaging();
-    fbMessaging.onMessage(payload => {
-      addNotif(payload.notification.title, payload.notification.body);
-    });
-  } catch(e) { console.warn('Firebase init:', e); }
+function initFirebase() {} // mantido para compatibilidade
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
 }
 
 async function enablePush() {
   const btn = document.getElementById('notifEnable');
   btn.textContent = 'Ativando...';
   try {
-    // Garantir que o SW está registrado e ativo
-    const reg = await navigator.serviceWorker.ready;
-
-    // Pedir permissão
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      btn.textContent = '⚠️ Seu navegador não suporta push';
+      return;
+    }
     const perm = await Notification.requestPermission();
     if (perm !== 'granted') {
       btn.textContent = '⚠️ Permissão negada. Ative nas configurações.';
       return;
     }
-
-    // Inicializar Firebase se necessário
-    if (!fbMessaging) initFirebase();
-
-    // Pegar token FCM
-    const token = await fbMessaging.getToken({ vapidKey: VAPID, serviceWorkerRegistration: reg });
-
-    if (token) {
-      localStorage.setItem(K_PUSH_TOKEN, token);
-      // Salvar no Supabase
-      await supa('usuarios?id=eq.'+currentUser.id, 'PATCH', { push_token: token });
-      btn.classList.remove('show');
-      showToast('✓ Notificações ativadas!');
-    } else {
-      btn.textContent = '⚠️ Tente novamente';
-    }
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC)
+    });
+    const subJson = JSON.stringify(sub);
+    localStorage.setItem(K_PUSH_SUB, subJson);
+    await supa('usuarios?id=eq.'+currentUser.id, 'PATCH', { push_token: subJson });
+    btn.classList.remove('show');
+    showToast('✓ Notificações ativadas!');
   } catch(e) {
     console.error('Push error:', e);
     btn.textContent = '⚠️ Erro: ' + e.message;
@@ -993,13 +977,11 @@ async function enablePush() {
 async function checkPushStatus() {
   if (currentUser.cargo !== 'designer') return;
   document.getElementById('notifWrap').classList.remove('hidden');
-  // Verificar se já tem token salvo localmente
-  const savedToken = localStorage.getItem(K_PUSH_TOKEN);
-  if (Notification.permission !== 'granted' || !savedToken) {
+  const savedSub = localStorage.getItem(K_PUSH_SUB);
+  if (Notification.permission !== 'granted' || !savedSub) {
     document.getElementById('notifEnable').classList.add('show');
   } else {
-    // Re-salvar token no Supabase caso tenha sido perdido
-    try { await supa('usuarios?id=eq.'+currentUser.id, 'PATCH', { push_token: savedToken }); } catch(e){}
+    try { await supa('usuarios?id=eq.'+currentUser.id, 'PATCH', { push_token: savedSub }); } catch(e){}
   }
 }
 
@@ -1075,15 +1057,15 @@ async function sendPushToDesigner(designerId, demandaTitulo, tipo) {
   try {
     const rows = await supa('usuarios?id=eq.'+designerId);
     if (!rows.length || !rows[0].push_token) return;
-    // Usar Supabase Edge Function para enviar FCM
+    let subscription;
+    try { subscription = JSON.parse(rows[0].push_token); } catch(e) { return; }
     await fetch(SUPA_URL+'/functions/v1/send-push', {
       method: 'POST',
       headers: { 'Authorization': 'Bearer '+SUPA_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        token: rows[0].push_token,
+        subscription,
         title: '🎨 Nova demanda!',
-        body: demandaTitulo + ' · ' + tipo,
-        criadoPor: currentUser.nome
+        body: demandaTitulo + ' · ' + tipo + ' — por ' + currentUser.nome
       })
     });
   } catch(e) { console.warn('Push send:', e); }
@@ -1152,7 +1134,5 @@ function stopRealtime() {
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
 </body>
 </html>
