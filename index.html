@@ -605,6 +605,7 @@ async function doLogin() {
 async function doLogout() {
   currentUser = null;
   localStorage.removeItem(K_SESSION);
+  stopRealtime();
   document.getElementById('screen-app').classList.remove('active');
   document.getElementById('screen-login').classList.add('active');
   document.getElementById('lEmail').value='';
@@ -640,6 +641,7 @@ async function enterApp() {
   populateDesignerFilter();
   checkPushStatus();
   renderNotifBadge();
+  startRealtime();
   showView('kanban');
   setTimeout(()=>{ initMobileCols(); },150);
 }
@@ -1097,6 +1099,38 @@ function registerSW() {
 }
 
 // ════════════════════════════════
+// REALTIME
+// ════════════════════════════════
+let realtimeChannel = null;
+
+function startRealtime() {
+  if (realtimeChannel) return;
+  const supaClient = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+  realtimeChannel = supaClient
+    .channel('demandas-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'demandas' }, payload => {
+      // Atualiza o board automaticamente
+      renderBoard();
+      // Se for designer e chegou nova demanda para ele — adiciona notificação
+      if (currentUser && currentUser.cargo === 'designer' && payload.eventType === 'INSERT') {
+        const nova = payload.new;
+        if (nova.designer_id === currentUser.id) {
+          addNotif('🎨 Nova demanda!', nova.titulo + ' · ' + nova.tipo);
+          showToast('Nova demanda chegou!');
+        }
+      }
+    })
+    .subscribe();
+}
+
+function stopRealtime() {
+  if (realtimeChannel) {
+    realtimeChannel.unsubscribe();
+    realtimeChannel = null;
+  }
+}
+
+// ════════════════════════════════
 // FILTRO DESIGNER
 // ════════════════════════════════
 
@@ -1117,6 +1151,7 @@ function registerSW() {
   }
 })();
 </script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
 </body>
