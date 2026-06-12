@@ -632,6 +632,11 @@ async function enterApp() {
   document.getElementById('btnNovaDemanda').classList.toggle('hidden',!canCreate);
   ['addCol0','addCol1','addCol2'].forEach(id=>document.getElementById(id).classList.toggle('hidden',!canCreate));
 
+  flt = 'todos';
+  fltDesigner = 'todos';
+  document.querySelectorAll('.pill').forEach(b=>b.classList.remove('on'));
+  const todoPill = document.querySelector('.pill[data-f="todos"]');
+  if(todoPill) todoPill.classList.add('on');
   populateDesignerFilter();
   checkPushStatus();
   renderNotifBadge();
@@ -753,13 +758,18 @@ async function renderBoard() {
     if(!cols[i].children.length) cols[i].innerHTML='<div class="empty-col"><div class="empty-icon"><svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--text-dim);fill:none;stroke-width:1.5;stroke-linecap:round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-4 0v2M8 7V5a2 2 0 0 0-4 0v2"/></svg></div><p>Sem demandas aqui</p></div>';
   });
 
-  // KPIs totais (sem filtro)
-  let all = [];
-  try { all = await supa(currentUser.cargo==='designer'?'demandas?designer_id=eq.'+currentUser.id:'demandas'); } catch(e){}
-  document.getElementById('st0').textContent=all.filter(t=>t.col===0).length;
-  document.getElementById('st1').textContent=all.filter(t=>t.col===1).length;
-  document.getElementById('st2').textContent=all.filter(t=>t.col===2).length;
-  document.getElementById('st3').textContent=all.length;
+  // KPIs — usar as tasks já buscadas (sem filtro de tipo/designer)
+  let allForKpi = [];
+  try {
+    const kpiUrl = currentUser.cargo==='designer'
+      ? 'demandas?designer_id=eq.'+currentUser.id+'&order=id.desc'
+      : 'demandas?order=id.desc';
+    allForKpi = await supa(kpiUrl);
+  } catch(e){}
+  document.getElementById('st0').textContent=allForKpi.filter(t=>t.col===0).length;
+  document.getElementById('st1').textContent=allForKpi.filter(t=>t.col===1).length;
+  document.getElementById('st2').textContent=allForKpi.filter(t=>t.col===2).length;
+  document.getElementById('st3').textContent=allForKpi.length;
 }
 
 async function mv(id,dir) {
