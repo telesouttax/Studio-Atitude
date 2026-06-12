@@ -1057,18 +1057,31 @@ async function sendPushToDesigner(designerId, demandaTitulo, tipo) {
   try {
     const rows = await supa('usuarios?id=eq.'+designerId);
     if (!rows.length || !rows[0].push_token) return;
+    
+    const rawToken = rows[0].push_token;
     let subscription;
-    try { subscription = JSON.parse(rows[0].push_token); } catch(e) { return; }
-    await fetch(SUPA_URL+'/functions/v1/send-push', {
+    
+    // pode vir como string ou já como objeto
+    if (typeof rawToken === 'string') {
+      subscription = JSON.parse(rawToken);
+    } else {
+      subscription = rawToken;
+    }
+    
+    if (!subscription || !subscription.endpoint) return;
+
+    const res = await fetch(SUPA_URL+'/functions/v1/send-push', {
       method: 'POST',
       headers: { 'Authorization': 'Bearer '+SUPA_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        subscription,
+        subscription: subscription,
         title: '🎨 Nova demanda!',
         body: demandaTitulo + ' · ' + tipo + ' — por ' + currentUser.nome
       })
     });
-  } catch(e) { console.warn('Push send:', e); }
+    const result = await res.json();
+    console.log('Push result:', result);
+  } catch(e) { console.error('Push send error:', e); }
 }
 
 // ════════════════════════════════
