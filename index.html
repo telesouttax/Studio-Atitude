@@ -526,11 +526,83 @@
     }
     .btn-cancel:hover { color: var(--text); background: var(--surface3); }
 
-    /* RESPONSIVE */
-    @media (max-width: 700px) {
-      .board { grid-template-columns: 1fr; }
+    /* ═══════════════════════════════════════
+       MOBILE — tudo abaixo de 640px
+    ═══════════════════════════════════════ */
+    @media (max-width: 640px) {
+
+      /* Login */
+      #screen-login { padding: 1.25rem; }
+      .login-box { padding: 1.75rem 1.25rem; border-radius: 14px; }
+
+      /* Topbar */
+      .topbar { padding: 0 1rem; height: 50px; }
+      .brand-sep, .brand-page { display: none; }
+      .brand-name { font-size: 13px; }
+      .user-info { display: none; }
+      .user-pill { padding: 5px 7px; }
+
+      /* Nav tabs */
+      .nav-tabs { padding: 0 1rem; overflow-x: auto; }
+      .nav-tab { padding: 10px 12px; font-size: 12px; white-space: nowrap; }
+
+      /* KPIs — 2 colunas */
       .kpis { grid-template-columns: repeat(2, 1fr); }
+      .kpi { padding: 10px 1rem; }
+      .kpi-val { font-size: 18px; }
+      .kpi-label { font-size: 10px; }
+
+      /* Toolbar — empilhada */
+      .toolbar { flex-direction: column; align-items: stretch; padding: 8px 1rem; gap: 8px; }
+      .filters { gap: 5px; overflow-x: auto; flex-wrap: nowrap; padding-bottom: 2px; }
+      .filter-label { display: none; }
+      .search-wrap { width: 100%; }
+      #searchInput { width: 100%; flex: 1; }
+      .topbar-right { width: 100%; justify-content: space-between; }
+      #btnNovaDemanda { flex: 1; justify-content: center; }
+
+      /* Board — abas deslizantes */
+      .board {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        background: none;
+      }
+
+      /* Cada coluna vira uma seção dobravél */
+      .col { border-bottom: 0.5px solid var(--border); }
+      .col-head {
+        position: relative;
+        top: 0;
+        padding: 12px 1rem;
+        cursor: pointer;
+      }
+      .col-body { padding: 8px 1rem 12px; }
+      .col-body.collapsed { display: none; }
+
+      /* Cards no mobile */
+      .card { padding: 12px 13px; }
+      .card-title { font-size: 13px; }
+      .act-btn { padding: 5px 8px; font-size: 11px; }
+
+      /* Add btn */
+      .add-btn { margin: 0 1rem 10px; }
+
+      /* Admin view */
+      #view-admin { padding: 1rem; gap: 1.25rem; }
       .form-row { grid-template-columns: 1fr; }
+      .users-grid { grid-template-columns: 1fr; }
+
+      /* Modal — ocupa tela toda na base */
+      .overlay { align-items: flex-end; padding: 0; }
+      .modal {
+        border-radius: 18px 18px 0 0;
+        padding: 1.25rem 1.25rem 2rem;
+        max-width: 100%;
+        max-height: 92vh;
+        overflow-y: auto;
+      }
+      .field-row { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -833,6 +905,7 @@ function enterApp() {
   document.getElementById('addCol2').classList.toggle('hidden', !isSolicitante && !isAdmin);
 
   showView('kanban');
+  setTimeout(initMobileCols, 100);
 }
 
 // ════════════════════════════════════════
@@ -1085,6 +1158,24 @@ function deleteUser(id) {
 }
 
 // ════════════════════════════════════════
+// MOBILE — colunas colapsáveis
+// ════════════════════════════════════════
+function initMobileCols() {
+  if (window.innerWidth > 640) return;
+  [0,1,2].forEach(i => {
+    const head = document.querySelector(`#col${i}`).previousElementSibling;
+    const body = document.getElementById(`col${i}`);
+    // Começa com só col0 aberta
+    if (i !== 0) body.classList.add('collapsed');
+    head.addEventListener('click', () => {
+      body.classList.toggle('collapsed');
+      const ind = head.querySelector('.col-indicator');
+      if (ind) ind.style.opacity = body.classList.contains('collapsed') ? '0.4' : '1';
+    });
+  });
+}
+
+// ════════════════════════════════════════
 // KEYBOARD SHORTCUTS
 // ════════════════════════════════════════
 document.addEventListener('keydown', e => {
@@ -1102,6 +1193,10 @@ if (session) {
   const u = users.find(x=>x.id===session.id);
   if (u) { currentUser = u; enterApp(); }
 }
+
+window.addEventListener('resize', () => {
+  if (window.innerWidth <= 640) initMobileCols();
+});
 </script>
 </body>
 </html>
