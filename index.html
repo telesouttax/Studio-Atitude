@@ -128,30 +128,13 @@
       margin-top: -6px;
     }
 
-    .login-tabs {
-      display: flex;
-      background: var(--surface2);
-      border-radius: 10px;
-      padding: 3px;
-      margin-bottom: 1.5rem;
-    }
-
-    .login-tab {
-      flex: 1;
-      padding: 7px;
+    .login-hint {
+      font-size: 12px;
+      color: var(--text-dim);
       text-align: center;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text-muted);
-      cursor: pointer;
-      border-radius: 8px;
-      transition: all 0.15s;
-      border: none;
-      background: none;
-      font-family: 'Space Grotesk', sans-serif;
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
     }
-
-    .login-tab.on { background: var(--surface3); color: var(--text); }
 
     .lfield { margin-bottom: 12px; }
     .lfield label { display: block; font-family: 'Space Mono', monospace; font-size: 10px; color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 5px; }
@@ -562,34 +545,14 @@
       <div class="login-sub">Gestão de demandas · Design</div>
     </div>
 
-    <div class="login-tabs">
-      <button class="login-tab on" id="tab-login" onclick="switchTab('login')">Entrar</button>
-      <button class="login-tab" id="tab-register" onclick="switchTab('register')">Cadastrar</button>
-    </div>
+    <p style="font-size:12px;color:var(--text-dim);text-align:center;margin-bottom:1.5rem;line-height:1.6;">
+      Acesso somente para membros<br/>cadastrados pelo administrador.
+    </p>
 
-    <!-- LOGIN FORM -->
     <div id="form-login">
-      <div class="lfield"><label>E-mail</label><input type="email" id="lEmail" placeholder="seu@email.com" /></div>
-      <div class="lfield"><label>Senha</label><input type="password" id="lSenha" placeholder="••••••••" /></div>
+      <div class="lfield"><label>E-mail</label><input type="email" id="lEmail" placeholder="seu@email.com" onkeydown="if(event.key===&apos;Enter&apos;)doLogin()" /></div>
+      <div class="lfield"><label>Senha</label><input type="password" id="lSenha" placeholder="••••••••" onkeydown="if(event.key===&apos;Enter&apos;)doLogin()" /></div>
       <button class="btn-login" onclick="doLogin()">Entrar</button>
-    </div>
-
-    <!-- REGISTER FORM -->
-    <div id="form-register" class="hidden">
-      <div class="lfield"><label>Nome completo</label><input type="text" id="rNome" placeholder="Seu nome" /></div>
-      <div class="lfield"><label>E-mail</label><input type="email" id="rEmail" placeholder="seu@email.com" /></div>
-      <div class="lfield"><label>Senha</label><input type="password" id="rSenha" placeholder="Mín. 6 caracteres" /></div>
-      <div class="lfield">
-        <label>Cargo</label>
-        <select id="rCargo">
-          <option value="designer">Designer</option>
-          <option value="solicitante">Solicitante</option>
-        </select>
-      </div>
-      <p style="font-size:11px;color:var(--text-muted);margin-bottom:12px;line-height:1.5;">
-        O cadastro precisa ser aprovado pelo admin antes de acessar.
-      </p>
-      <button class="btn-login" onclick="doRegister()">Solicitar acesso</button>
     </div>
 
     <div class="login-error" id="loginError"></div>
@@ -728,12 +691,6 @@
       </div>
     </div>
 
-    <!-- Pending requests -->
-    <div id="pendingSection">
-      <div class="admin-section-title">Solicitações pendentes</div>
-      <div class="users-grid" id="pendingList"></div>
-    </div>
-
     <!-- Users list -->
     <div>
       <div class="admin-section-title">Usuários ativos</div>
@@ -786,7 +743,6 @@
 // STORAGE KEYS
 // ════════════════════════════════════════
 const K_USERS    = 'sa_users_v1';
-const K_PENDING  = 'sa_pending_v1';
 const K_TASKS    = 'sa_tasks_v1';
 const K_SESSION  = 'sa_session_v1';
 
@@ -795,8 +751,6 @@ const K_SESSION  = 'sa_session_v1';
 // ════════════════════════════════════════
 function loadUsers()   { try { return JSON.parse(localStorage.getItem(K_USERS)   || 'null') || []; } catch(e){ return []; } }
 function saveUsers(u)  { localStorage.setItem(K_USERS, JSON.stringify(u)); }
-function loadPending() { try { return JSON.parse(localStorage.getItem(K_PENDING) || 'null') || []; } catch(e){ return []; } }
-function savePending(p){ localStorage.setItem(K_PENDING, JSON.stringify(p)); }
 function loadTasks()   { try { return JSON.parse(localStorage.getItem(K_TASKS)   || 'null') || []; } catch(e){ return []; } }
 function saveTasks(t)  { localStorage.setItem(K_TASKS, JSON.stringify(t)); }
 function loadSession() { try { return JSON.parse(localStorage.getItem(K_SESSION) || 'null'); } catch(e){ return null; } }
@@ -834,14 +788,6 @@ function ensureAdmin() {
 // ════════════════════════════════════════
 let currentUser = null;
 
-function switchTab(tab) {
-  document.getElementById('tab-login').classList.toggle('on', tab==='login');
-  document.getElementById('tab-register').classList.toggle('on', tab==='register');
-  document.getElementById('form-login').classList.toggle('hidden', tab!=='login');
-  document.getElementById('form-register').classList.toggle('hidden', tab!=='register');
-  document.getElementById('loginError').textContent = '';
-}
-
 function showError(msg) { document.getElementById('loginError').textContent = msg; }
 
 function doLogin() {
@@ -853,25 +799,6 @@ function doLogin() {
   currentUser = user;
   saveSession(user);
   enterApp();
-}
-
-function doRegister() {
-  const nome  = document.getElementById('rNome').value.trim();
-  const email = document.getElementById('rEmail').value.trim().toLowerCase();
-  const senha = document.getElementById('rSenha').value;
-  const cargo = document.getElementById('rCargo').value;
-  if (!nome || !email || !senha) { showError('Preencha todos os campos.'); return; }
-  if (senha.length < 6) { showError('Senha mínima: 6 caracteres.'); return; }
-  const users   = loadUsers();
-  const pending = loadPending();
-  if (users.find(u=>u.email.toLowerCase()===email) || pending.find(u=>u.email.toLowerCase()===email)) {
-    showError('Este e-mail já está cadastrado.'); return;
-  }
-  pending.push({ id: 'p-'+Date.now(), nome, email, senha, cargo });
-  savePending(pending);
-  showError('');
-  document.getElementById('loginError').style.color = 'var(--green)';
-  document.getElementById('loginError').textContent = 'Solicitação enviada! Aguarde aprovação do admin.';
 }
 
 function doLogout() {
@@ -1108,34 +1035,6 @@ function saveCard() {
 // ════════════════════════════════════════
 function renderAdmin() {
   const users   = loadUsers();
-  const pending = loadPending();
-
-  // Pending
-  const pSec = document.getElementById('pendingSection');
-  const pList = document.getElementById('pendingList');
-  pSec.style.display = pending.length ? '' : 'none';
-  pList.innerHTML = '';
-  pending.forEach(u => {
-    const card = document.createElement('div');
-    card.className = 'user-card';
-    card.innerHTML = `
-      <div class="user-card-left">
-        <div class="user-card-av ${u.cargo==='designer'?'av-designer':'av-solicitante'}">${ini(u.nome)}</div>
-        <div>
-          <div class="user-card-name">${u.nome}</div>
-          <div class="user-card-meta">
-            <span class="role-badge role-${u.cargo}">${u.cargo}</span>
-            <span style="font-size:11px;color:var(--text-muted)">${u.email}</span>
-          </div>
-        </div>
-      </div>
-      <div style="display:flex;gap:6px">
-        <button onclick="approveUser('${u.id}')" style="background:var(--green-bg);color:var(--green);border:0.5px solid var(--green-border);border-radius:7px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Space Grotesk',sans-serif">Aprovar</button>
-        <button onclick="rejectUser('${u.id}')" class="user-card-del"><svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
-      </div>`;
-    pList.appendChild(card);
-  });
-
   // Active users
   const uList = document.getElementById('usersList');
   uList.innerHTML = '';
@@ -1176,22 +1075,6 @@ function adminAddUser() {
   msg.style.color='var(--green)';
   msg.textContent=`✓ ${nome} cadastrado como ${cargo}.`;
   setTimeout(()=>msg.textContent='', 3000);
-  renderAdmin();
-}
-
-function approveUser(id) {
-  const pending = loadPending();
-  const u = pending.find(x=>x.id===id);
-  if (!u) return;
-  const users = loadUsers();
-  users.push({ ...u, id: 'u-'+Date.now() });
-  saveUsers(users);
-  savePending(pending.filter(x=>x.id!==id));
-  renderAdmin();
-}
-
-function rejectUser(id) {
-  savePending(loadPending().filter(x=>x.id!==id));
   renderAdmin();
 }
 
