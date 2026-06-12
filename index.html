@@ -8,6 +8,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#E87722" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Studio Atitude" />
+  <link rel="apple-touch-icon" href="logo.png" />
   <style>
     :root {
       --orange:#E87722;--orange-dim:rgba(232,119,34,0.15);--orange-border:rgba(232,119,34,0.3);
@@ -200,6 +206,92 @@
     .btn-cancel{background:var(--surface2);color:var(--text-muted);font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;padding:10px 16px;border-radius:8px;border:0.5px solid var(--border2);cursor:pointer;transition:all 0.12s}
     .btn-cancel:hover{color:var(--text);background:var(--surface3)}
 
+    /* NOTIFICAÇÕES */
+    .notif-wrap{position:relative}
+    .notif-badge{
+      position:absolute;top:-4px;right:-4px;
+      width:16px;height:16px;border-radius:50%;
+      background:var(--red);color:#fff;
+      font-size:9px;font-weight:700;
+      display:none;align-items:center;justify-content:center;
+      border:2px solid var(--black);
+    }
+    .notif-badge.show{display:flex}
+    .notif-panel{
+      display:none;position:absolute;top:46px;right:0;
+      width:300px;background:var(--surface);
+      border:0.5px solid var(--border2);border-radius:14px;
+      z-index:100;overflow:hidden;
+      box-shadow:0 8px 32px rgba(0,0,0,0.5);
+    }
+    .notif-panel.open{display:block}
+    .notif-header{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:12px 14px;border-bottom:0.5px solid var(--border);
+    }
+    .notif-title{font-size:13px;font-weight:600;color:var(--text)}
+    .notif-clear{font-size:11px;color:var(--orange);cursor:pointer;background:none;border:none;font-family:'Space Grotesk',sans-serif;font-weight:600}
+    .notif-list{max-height:320px;overflow-y:auto}
+    .notif-item{
+      padding:12px 14px;border-bottom:0.5px solid var(--border);
+      cursor:pointer;transition:background 0.12s;
+    }
+    .notif-item:hover{background:var(--surface2)}
+    .notif-item:last-child{border-bottom:none}
+    .notif-item-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px}
+    .notif-item-sub{font-size:11px;color:var(--text-muted);line-height:1.4}
+    .notif-item-time{font-size:10px;color:var(--text-dim);margin-top:4px;font-family:'Space Mono',monospace}
+    .notif-empty{padding:1.5rem;text-align:center;font-size:13px;color:var(--text-dim)}
+    .notif-enable{
+      margin:12px 14px;padding:9px;
+      background:var(--orange-dim);border:0.5px solid var(--orange-border);
+      border-radius:9px;text-align:center;cursor:pointer;
+      font-size:12px;font-weight:600;color:var(--orange);
+      display:none;
+    }
+    .notif-enable.show{display:block}
+    @media(max-width:640px){
+      .notif-panel{width:calc(100vw - 2rem);right:-1rem}
+    }
+
+    /* FILTRO DESIGNER */
+    .designer-filter-bar{
+      display:none;
+      align-items:center;gap:8px;
+      padding:8px 1.5rem;
+      border-bottom:0.5px solid var(--border);
+      background:var(--surface2);
+      overflow-x:auto;-webkit-overflow-scrolling:touch;
+      flex-wrap:nowrap;
+    }
+    .designer-filter-bar::-webkit-scrollbar{display:none}
+    .designer-filter-bar.show{display:flex}
+    .designer-filter-label{
+      font-family:'Space Mono',monospace;font-size:10px;
+      color:var(--text-dim);letter-spacing:0.08em;
+      text-transform:uppercase;white-space:nowrap;flex-shrink:0;
+    }
+    .dpill{
+      display:inline-flex;align-items:center;gap:6px;
+      font-size:12px;font-weight:600;
+      padding:5px 12px;border-radius:20px;
+      border:0.5px solid var(--border2);
+      background:transparent;color:var(--text-muted);
+      cursor:pointer;white-space:nowrap;flex-shrink:0;
+      font-family:'Space Grotesk',sans-serif;transition:all 0.15s;
+    }
+    .dpill:hover{border-color:var(--blue-border);color:var(--text)}
+    .dpill.on{background:var(--blue);color:#000;border-color:var(--blue)}
+    .dpill .dav-sm{
+      width:18px;height:18px;border-radius:50%;
+      background:rgba(0,0,0,0.2);color:inherit;
+      font-size:8px;font-weight:700;
+      display:flex;align-items:center;justify-content:center;flex-shrink:0;
+    }
+    @media(max-width:640px){
+      .designer-filter-bar{padding:8px 1rem}
+    }
+
     /* MOBILE */
     @media(max-width:640px){
       /* Login */
@@ -323,6 +415,26 @@
           <span class="user-role" id="topRole">—</span>
         </div>
       </div>
+      <!-- SINO NOTIFICAÇÕES (só designer) -->
+      <div class="notif-wrap hidden" id="notifWrap" style="position:relative">
+        <button class="btn-icon" onclick="toggleNotifPanel()" id="notifBtn" title="Notificações">
+          <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        </button>
+        <span class="notif-badge" id="notifBadge">0</span>
+        <div class="notif-panel" id="notifPanel">
+          <div class="notif-header">
+            <span class="notif-title">Notificações</span>
+            <button class="notif-clear" onclick="clearNotifs()">Limpar tudo</button>
+          </div>
+          <div class="notif-enable" id="notifEnable" onclick="enablePush()">
+            <svg style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;vertical-align:-2px;margin-right:4px" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            Ativar notificações push
+          </div>
+          <div class="notif-list" id="notifList">
+            <div class="notif-empty">Sem notificações</div>
+          </div>
+        </div>
+      </div>
       <button class="btn-icon" onclick="doLogout()" title="Sair">
         <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       </button>
@@ -368,6 +480,11 @@
         </button>
       </div>
     </div>
+    <!-- FILTRO DESIGNER (só para solicitante/admin) -->
+    <div class="designer-filter-bar" id="designerFilterBar">
+      <span class="designer-filter-label">Designer</span>
+    </div>
+
     <div class="board">
       <div class="col">
         <div class="col-head"><div class="col-left"><div class="col-indicator" style="background:var(--purple)"></div><span class="col-name">Solicitado</span></div><span class="col-count" id="cc0">0</span></div>
@@ -517,6 +634,9 @@ async function enterApp() {
   document.getElementById('btnNovaDemanda').classList.toggle('hidden',!canCreate);
   ['addCol0','addCol1','addCol2'].forEach(id=>document.getElementById(id).classList.toggle('hidden',!canCreate));
 
+  populateDesignerFilter();
+  checkPushStatus();
+  renderNotifBadge();
   showView('kanban');
   setTimeout(()=>{ initMobileCols(); },150);
 }
@@ -539,6 +659,41 @@ function showView(v) {
 // ════════════════════════════════
 function sf(el) { document.querySelectorAll('.pill').forEach(b=>b.classList.remove('on')); el.classList.add('on'); flt=el.dataset.f; renderBoard(); }
 
+function sfd(el) {
+  document.querySelectorAll('.dpill').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  fltDesigner = el.dataset.d;
+  renderBoard();
+}
+
+function populateDesignerFilter() {
+  const bar = document.getElementById('designerFilterBar');
+  const isAdmin = currentUser.cargo==='admin';
+  const isSolicitante = currentUser.cargo==='solicitante';
+  if (!isAdmin && !isSolicitante) { bar.classList.remove('show'); return; }
+
+  bar.classList.add('show');
+  // Limpa mantendo só o label
+  while(bar.children.length > 1) bar.removeChild(bar.lastChild);
+
+  // Pill "Todos"
+  const all = document.createElement('button');
+  all.className = 'dpill on'; all.dataset.d = 'todos';
+  all.textContent = 'Todos'; all.onclick = ()=>sfd(all);
+  bar.appendChild(all);
+
+  // Um pill por designer
+  allUsers.filter(u=>u.cargo==='designer').forEach(d=>{
+    const btn = document.createElement('button');
+    btn.className = 'dpill'; btn.dataset.d = d.id;
+    btn.innerHTML = `<span class="dav-sm">${ini(d.nome)}</span>${d.nome}`;
+    btn.onclick = ()=>sfd(btn);
+    bar.appendChild(btn);
+  });
+
+  fltDesigner = 'todos';
+}
+
 async function renderBoard() {
   const q=(document.getElementById('searchInput').value||'').toLowerCase();
   const cols=[0,1,2].map(i=>document.getElementById('col'+i));
@@ -555,6 +710,7 @@ async function renderBoard() {
 
   tasks.filter(t=>{
     if(flt!=='todos'&&t.tipo!==flt) return false;
+    if(fltDesigner!=='todos'&&t.designer_id!==fltDesigner) return false;
     if(q&&!t.titulo.toLowerCase().includes(q)) return false;
     return true;
   }).forEach(t=>{
@@ -663,7 +819,11 @@ async function saveCard() {
   const d={titulo,tipo:document.getElementById('fTipo').value,prioridade:document.getElementById('fPrioridade').value,prazo:document.getElementById('fPrazo').value||null,obs:document.getElementById('fObs').value.trim()||null,col:parseInt(document.getElementById('fCol').value),designer_id:document.getElementById('fDesigner').value||null,criado_por:currentUser.id};
   try {
     if(eid) await supa('demandas?id=eq.'+eid,'PATCH',d);
-    else { d.id=Date.now(); await supa('demandas','POST',d); }
+    else {
+      d.id=Date.now();
+      await supa('demandas','POST',d);
+      if(d.designer_id) await sendPushToDesigner(d.designer_id, d.titulo, d.tipo);
+    }
     closeModal(); await renderBoard();
   } catch(e){ alert('Erro ao salvar: '+e.message); }
   loading(false);
@@ -749,9 +909,160 @@ document.addEventListener('keydown',e=>{
 });
 
 // ════════════════════════════════
+// FIREBASE + PUSH NOTIFICATIONS
+// ════════════════════════════════
+const FB_CONFIG = {
+  apiKey: "AIzaSyBGn9LxTldEOMDuqoEY3Jxw0acmnCsmIQM",
+  authDomain: "studio-atitude.firebaseapp.com",
+  projectId: "studio-atitude",
+  storageBucket: "studio-atitude.firebasestorage.app",
+  messagingSenderId: "715112663622",
+  appId: "1:715112663622:web:2ce104f5a4f8cd3739d847"
+};
+const VAPID = "BP58SYQkOv2TQgIexnw-wti8f1aT2ME0UFjvsa-qxtwvnBkfC_BG-r6cldaez7v4bTZSNbOCKE16p0dpJVBqhks";
+const K_NOTIFS = 'sa_notifs_v1';
+const K_PUSH_TOKEN = 'sa_push_token';
+let fbMessaging = null;
+
+function initFirebase() {
+  try {
+    if (!firebase.apps.length) firebase.initializeApp(FB_CONFIG);
+    fbMessaging = firebase.messaging();
+    fbMessaging.onMessage(payload => {
+      addNotif(payload.notification.title, payload.notification.body);
+    });
+  } catch(e) { console.warn('Firebase init:', e); }
+}
+
+async function enablePush() {
+  try {
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') return;
+    if (!fbMessaging) initFirebase();
+    const token = await fbMessaging.getToken({ vapidKey: VAPID });
+    if (token) {
+      localStorage.setItem(K_PUSH_TOKEN, token);
+      // Salvar token no Supabase para enviar notificações depois
+      await supa('usuarios?id=eq.'+currentUser.id, 'PATCH', { push_token: token });
+      document.getElementById('notifEnable').classList.remove('show');
+      showToast('Notificações ativadas!');
+    }
+  } catch(e) { console.warn('Push token:', e); }
+}
+
+async function checkPushStatus() {
+  if (currentUser.cargo !== 'designer') return;
+  document.getElementById('notifWrap').classList.remove('hidden');
+  if (Notification.permission !== 'granted') {
+    document.getElementById('notifEnable').classList.add('show');
+  }
+}
+
+// Notificações locais (badge + painel)
+function loadNotifs() {
+  try { return JSON.parse(localStorage.getItem(K_NOTIFS+'_'+currentUser.id)||'[]'); } catch(e){return[];}
+}
+function saveNotifs(n) { localStorage.setItem(K_NOTIFS+'_'+currentUser.id, JSON.stringify(n)); }
+
+function addNotif(title, body) {
+  const notifs = loadNotifs();
+  notifs.unshift({ id: Date.now(), title, body, time: new Date().toISOString(), read: false });
+  if (notifs.length > 50) notifs.pop();
+  saveNotifs(notifs);
+  renderNotifBadge();
+  renderNotifList();
+}
+
+function renderNotifBadge() {
+  const notifs = loadNotifs();
+  const unread = notifs.filter(n=>!n.read).length;
+  const badge = document.getElementById('notifBadge');
+  badge.textContent = unread > 9 ? '9+' : unread;
+  badge.classList.toggle('show', unread > 0);
+}
+
+function renderNotifList() {
+  const notifs = loadNotifs();
+  const list = document.getElementById('notifList');
+  if (!notifs.length) { list.innerHTML='<div class="notif-empty">Sem notificações</div>'; return; }
+  list.innerHTML = notifs.map(n=>`
+    <div class="notif-item" style="${!n.read?'border-left:2px solid var(--orange);padding-left:12px':''}">
+      <div class="notif-item-title">${n.title}</div>
+      <div class="notif-item-sub">${n.body}</div>
+      <div class="notif-item-time">${new Date(n.time).toLocaleString('pt-BR',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'})}</div>
+    </div>`).join('');
+}
+
+function toggleNotifPanel() {
+  const panel = document.getElementById('notifPanel');
+  panel.classList.toggle('open');
+  if (panel.classList.contains('open')) {
+    // Marcar todas como lidas
+    const notifs = loadNotifs().map(n=>({...n,read:true}));
+    saveNotifs(notifs);
+    renderNotifBadge();
+    renderNotifList();
+  }
+}
+
+function clearNotifs() {
+  saveNotifs([]);
+  renderNotifBadge();
+  renderNotifList();
+}
+
+// Fechar painel ao clicar fora
+document.addEventListener('click', e=>{
+  const wrap = document.getElementById('notifWrap');
+  if (wrap && !wrap.contains(e.target)) document.getElementById('notifPanel').classList.remove('open');
+});
+
+// Toast
+function showToast(msg) {
+  let t = document.getElementById('toast');
+  if (!t) { t=document.createElement('div'); t.id='toast'; t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1C1C1C;color:#F0EDE8;border:0.5px solid rgba(255,255,255,0.13);border-radius:20px;padding:10px 20px;font-size:13px;font-weight:500;z-index:999;transition:opacity 0.3s'; document.body.appendChild(t); }
+  t.textContent=msg; t.style.opacity='1';
+  setTimeout(()=>t.style.opacity='0', 2500);
+}
+
+// Enviar push para o designer quando criar demanda
+async function sendPushToDesigner(designerId, demandaTitulo, tipo) {
+  try {
+    const rows = await supa('usuarios?id=eq.'+designerId);
+    if (!rows.length || !rows[0].push_token) return;
+    // Usar Supabase Edge Function para enviar FCM
+    await fetch(SUPA_URL+'/functions/v1/send-push', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer '+SUPA_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        token: rows[0].push_token,
+        title: '🎨 Nova demanda!',
+        body: demandaTitulo + ' · ' + tipo,
+        criadoPor: currentUser.nome
+      })
+    });
+  } catch(e) { console.warn('Push send:', e); }
+}
+
+// ════════════════════════════════
+// PWA — Service Worker
+// ════════════════════════════════
+function registerSW() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(e=>console.warn('SW:', e));
+  }
+}
+
+// ════════════════════════════════
+// FILTRO DESIGNER
+// ════════════════════════════════
+
+// ════════════════════════════════
 // INIT
 // ════════════════════════════════
 (async()=>{
+  registerSW();
+  initFirebase();
   const sid=localStorage.getItem(K_SESSION);
   if(sid){
     loading(true,'Restaurando sessão...');
@@ -763,5 +1074,7 @@ document.addEventListener('keydown',e=>{
   }
 })();
 </script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
 </body>
 </html>
