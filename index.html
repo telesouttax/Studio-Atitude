@@ -290,6 +290,64 @@
       .designer-filter-bar{padding:8px 1rem}
     }
 
+    /* UPLOAD DE IMAGENS */
+    .upload-area{
+      border:0.5px dashed var(--border2);border-radius:10px;
+      padding:14px;cursor:pointer;transition:all 0.15s;
+      display:flex;flex-direction:column;align-items:center;gap:6px;
+      background:var(--surface2);
+    }
+    .upload-area:hover,.upload-area.drag{border-color:var(--orange);background:var(--orange-dim)}
+    .upload-area svg{width:20px;height:20px;stroke:var(--text-muted);fill:none;stroke-width:1.5;stroke-linecap:round}
+    .upload-area.drag svg{stroke:var(--orange)}
+    .upload-label{font-size:12px;color:var(--text-muted);font-weight:500}
+    .upload-area.drag .upload-label{color:var(--orange)}
+    .upload-sub{font-size:11px;color:var(--text-dim)}
+    .upload-progress{
+      width:100%;height:3px;background:var(--border);border-radius:2px;
+      margin-top:4px;display:none;overflow:hidden;
+    }
+    .upload-progress-bar{height:100%;background:var(--orange);border-radius:2px;width:0%;transition:width 0.3s}
+    .imgs-preview{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+    .img-thumb{
+      position:relative;width:72px;height:72px;border-radius:8px;overflow:hidden;
+      border:0.5px solid var(--border2);flex-shrink:0;
+    }
+    .img-thumb img{width:100%;height:100%;object-fit:cover;cursor:pointer}
+    .img-thumb-del{
+      position:absolute;top:3px;right:3px;width:18px;height:18px;
+      border-radius:50%;background:rgba(0,0,0,0.7);border:none;
+      color:#fff;font-size:10px;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;line-height:1;
+    }
+    .card-imgs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+    .card-img-thumb{
+      width:60px;height:60px;border-radius:7px;overflow:hidden;
+      border:0.5px solid var(--border2);cursor:pointer;flex-shrink:0;
+    }
+    .card-img-thumb img{width:100%;height:100%;object-fit:cover}
+    /* LIGHTBOX */
+    .lightbox{
+      display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);
+      z-index:500;align-items:center;justify-content:center;padding:1rem;
+    }
+    .lightbox.open{display:flex;flex-direction:column;gap:12px}
+    .lightbox img{max-width:100%;max-height:85vh;border-radius:10px;object-fit:contain}
+    .lightbox-close{
+      position:absolute;top:1rem;right:1rem;
+      width:36px;height:36px;border-radius:50%;
+      background:var(--surface2);border:0.5px solid var(--border2);
+      color:var(--text);font-size:18px;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;
+    }
+    .lightbox-nav{display:flex;gap:12px;align-items:center}
+    .lightbox-btn{
+      background:var(--surface2);border:0.5px solid var(--border2);
+      color:var(--text);border-radius:8px;padding:7px 14px;cursor:pointer;font-size:13px;
+      font-family:'Space Grotesk',sans-serif;font-weight:600;
+    }
+    .lightbox-counter{font-size:12px;color:var(--text-muted);font-family:'Space Mono',monospace}
+
     /* MOBILE */
     @media(max-width:640px){
       /* Login */
@@ -544,6 +602,20 @@
     </div>
     <div class="field"><label>Designer responsável</label><select id="fDesigner"><option value="">— Selecionar —</option></select></div>
     <div class="field"><label>Observações</label><textarea id="fObs" placeholder="Medidas, cores, referências..."></textarea></div>
+    <div class="field" id="uploadField">
+      <label>Imagens de referência</label>
+      <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()"
+        ondragover="event.preventDefault();this.classList.add('drag')"
+        ondragleave="this.classList.remove('drag')"
+        ondrop="handleDrop(event)">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <span class="upload-label">Clique ou arraste imagens aqui</span>
+        <span class="upload-sub">PNG, JPG, WEBP — máx. 10MB cada</span>
+        <div class="upload-progress" id="uploadProgress"><div class="upload-progress-bar" id="uploadBar"></div></div>
+      </div>
+      <input type="file" id="fileInput" multiple accept="image/*" style="display:none" onchange="handleFiles(this.files)" />
+      <div class="imgs-preview" id="imgsPreview"></div>
+    </div>
     <div class="modal-foot">
       <button class="btn-save" onclick="saveCard()">Salvar demanda</button>
       <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
@@ -639,6 +711,7 @@ async function enterApp() {
   const todoPill = document.querySelector('.pill[data-f="todos"]');
   if(todoPill) todoPill.classList.add('on');
   populateDesignerFilter();
+  updateUploadVisibility();
   checkPushStatus();
   renderNotifBadge();
   startRealtime();
@@ -744,6 +817,7 @@ async function renderBoard() {
       </div>
       ${designerBadge}
       ${t.obs?`<div class="card-obs">${t.obs}</div>`:''}
+      <div id="imgs-${t.id}"></div>
       <div class="card-actions">
         <div class="act-group">${prev}${next}</div>
         <div class="act-group">
@@ -753,6 +827,8 @@ async function renderBoard() {
       </div>`;
     if(t.obs) el.onclick=()=>el.classList.toggle('open');
     cols[t.col].appendChild(el);
+    // Renderizar imagens no card
+    if(t.imagens) renderCardImgs(t.imagens, el.querySelector('#imgs-'+t.id));
   });
 
   [0,1,2].forEach(i=>{
@@ -807,6 +883,8 @@ function openModal(col) {
   document.getElementById('fObs').value='';
   document.getElementById('fCol').value=col!==undefined?col:0;
   populateDesignerSelect();
+  resetUpload();
+  updateUploadVisibility();
   document.getElementById('overlay').classList.add('open');
   setTimeout(()=>document.getElementById('fTitulo').focus(),100);
 }
@@ -824,6 +902,10 @@ async function editCard(id) {
   document.getElementById('fCol').value=t.col;
   populateDesignerSelect();
   document.getElementById('fDesigner').value=t.designer_id||'';
+  resetUpload();
+  updateUploadVisibility();
+  // Carregar imagens existentes
+  if(t.imagens){ try{ uploadedUrls=JSON.parse(t.imagens); renderPreview(); }catch(e){} }
   document.getElementById('overlay').classList.add('open');
 }
 
@@ -834,7 +916,7 @@ async function saveCard() {
   const titulo=document.getElementById('fTitulo').value.trim();
   if(!titulo){document.getElementById('fTitulo').focus();return;}
   loading(true,'Salvando...');
-  const d={titulo,tipo:document.getElementById('fTipo').value,prioridade:document.getElementById('fPrioridade').value,prazo:document.getElementById('fPrazo').value||null,obs:document.getElementById('fObs').value.trim()||null,col:parseInt(document.getElementById('fCol').value),designer_id:document.getElementById('fDesigner').value||null,criado_por:currentUser.id};
+  const d={titulo,tipo:document.getElementById('fTipo').value,prioridade:document.getElementById('fPrioridade').value,prazo:document.getElementById('fPrazo').value||null,obs:document.getElementById('fObs').value.trim()||null,col:parseInt(document.getElementById('fCol').value),designer_id:document.getElementById('fDesigner').value||null,criado_por:currentUser.id,imagens:uploadedUrls.length?JSON.stringify(uploadedUrls):null};
   try {
     if(eid) await supa('demandas?id=eq.'+eid,'PATCH',d);
     else {
@@ -1092,6 +1174,144 @@ function registerSW() {
     navigator.serviceWorker.register('/sw.js').catch(e=>console.warn('SW:', e));
   }
 }
+
+// ════════════════════════════════
+// CLOUDINARY — UPLOAD DE IMAGENS
+// ════════════════════════════════
+const CLOUD_NAME = 'dqghprrty';
+const UPLOAD_PRESET = 'studio-atitude';
+const CLOUD_URL = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
+
+let uploadedUrls = []; // URLs das imagens no modal atual
+let lightboxImgs = []; // Para o lightbox
+let lightboxIdx = 0;
+
+async function uploadImage(file) {
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('upload_preset', UPLOAD_PRESET);
+  fd.append('folder', 'referencias');
+
+  document.getElementById('uploadProgress').style.display = 'block';
+  const bar = document.getElementById('uploadBar');
+  bar.style.width = '30%';
+
+  const res = await fetch(CLOUD_URL, { method: 'POST', body: fd });
+  bar.style.width = '90%';
+  const data = await res.json();
+  bar.style.width = '100%';
+  setTimeout(() => {
+    document.getElementById('uploadProgress').style.display = 'none';
+    bar.style.width = '0%';
+  }, 500);
+
+  if (data.secure_url) return data.secure_url;
+  throw new Error('Upload falhou');
+}
+
+async function handleFiles(files) {
+  for (const file of files) {
+    if (!file.type.startsWith('image/')) continue;
+    if (file.size > 10 * 1024 * 1024) { showToast('⚠️ Imagem muito grande (máx 10MB)'); continue; }
+    try {
+      showToast('Enviando imagem...');
+      const url = await uploadImage(file);
+      uploadedUrls.push(url);
+      renderPreview();
+      showToast('✓ Imagem adicionada!');
+    } catch(e) {
+      showToast('⚠️ Erro ao enviar imagem');
+    }
+  }
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('uploadArea').classList.remove('drag');
+  handleFiles(e.dataTransfer.files);
+}
+
+function renderPreview() {
+  const wrap = document.getElementById('imgsPreview');
+  wrap.innerHTML = '';
+  uploadedUrls.forEach((url, i) => {
+    const div = document.createElement('div');
+    div.className = 'img-thumb';
+    div.innerHTML = `<img src="${url}" onclick="openLightbox(${i}, uploadedUrls)" />
+      <button class="img-thumb-del" onclick="removeImg(${i})">✕</button>`;
+    wrap.appendChild(div);
+  });
+}
+
+function removeImg(i) {
+  uploadedUrls.splice(i, 1);
+  renderPreview();
+}
+
+function resetUpload() {
+  uploadedUrls = [];
+  document.getElementById('imgsPreview').innerHTML = '';
+  document.getElementById('fileInput').value = '';
+}
+
+// Mostrar campo de upload só para solicitante/admin
+function updateUploadVisibility() {
+  const canUpload = currentUser && (currentUser.cargo === 'solicitante' || currentUser.cargo === 'admin');
+  const field = document.getElementById('uploadField');
+  if (field) field.style.display = canUpload ? '' : 'none';
+}
+
+// Renderizar imagens no card
+function renderCardImgs(imagens, cardEl) {
+  if (!imagens) return;
+  let urls = [];
+  try { urls = JSON.parse(imagens); } catch(e) { return; }
+  if (!urls.length) return;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'card-imgs';
+  urls.forEach((url, i) => {
+    const div = document.createElement('div');
+    div.className = 'card-img-thumb';
+    div.innerHTML = `<img src="${url}" alt="Ref ${i+1}" loading="lazy" />`;
+    div.onclick = (e) => { e.stopPropagation(); openLightbox(i, urls); };
+    wrap.appendChild(div);
+  });
+  cardEl.appendChild(wrap);
+}
+
+// LIGHTBOX
+function openLightbox(idx, imgs) {
+  lightboxImgs = typeof imgs === 'string' ? JSON.parse(imgs) : [...imgs];
+  lightboxIdx = idx;
+  updateLightbox();
+  document.getElementById('lightbox').classList.add('open');
+}
+
+function updateLightbox() {
+  document.getElementById('lightboxImg').src = lightboxImgs[lightboxIdx];
+  document.getElementById('lightboxCounter').textContent = `${lightboxIdx + 1} / ${lightboxImgs.length}`;
+  document.querySelector('.lightbox-nav').style.display = lightboxImgs.length > 1 ? 'flex' : 'none';
+}
+
+function lightboxNav(dir) {
+  lightboxIdx = (lightboxIdx + dir + lightboxImgs.length) % lightboxImgs.length;
+  updateLightbox();
+}
+
+function closeLightbox(e) {
+  if (!e || e.target === document.getElementById('lightbox') || e.target.classList.contains('lightbox-close')) {
+    document.getElementById('lightbox').classList.remove('open');
+  }
+}
+
+document.addEventListener('keydown', e => {
+  const lb = document.getElementById('lightbox');
+  if (!lb.classList.contains('open')) return;
+  if (e.key === 'Escape') closeLightbox({ target: lb });
+  if (e.key === 'ArrowLeft') lightboxNav(-1);
+  if (e.key === 'ArrowRight') lightboxNav(1);
+});
 
 // ════════════════════════════════
 // REALTIME
